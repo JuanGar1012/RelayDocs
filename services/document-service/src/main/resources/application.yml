@@ -1,0 +1,24 @@
+server:
+  port: 8081
+
+spring:
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/relaydocs}
+    username: ${DATABASE_USER:relaydocs}
+    password: ${DATABASE_PASSWORD:relaydocs}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+relaydocs:
+  events:
+    kafka:
+      enabled: ${RELAYDOCS_KAFKA_EVENTS_ENABLED:false}
+    kafka-topic: ${RELAYDOCS_KAFKA_TOPIC:relaydocs.domain-events}
