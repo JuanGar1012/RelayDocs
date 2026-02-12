@@ -10,7 +10,60 @@ services:
       - "5432:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
-      - ./infra/sql:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U relaydocs -d relaydocs"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  document-service:
+    build:
+      context: .
+      dockerfile: services/document-service/Dockerfile
+    container_name: relaydocs-document-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redpanda:
+        condition: service_started
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/relaydocs
+      DATABASE_USER: relaydocs
+      DATABASE_PASSWORD: relaydocs
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
+      RELAYDOCS_KAFKA_EVENTS_ENABLED: "false"
+      RELAYDOCS_KAFKA_TOPIC: relaydocs.domain-events
+    ports:
+      - "8081:8081"
+
+  gateway:
+    build:
+      context: .
+      dockerfile: apps/gateway/Dockerfile
+    container_name: relaydocs-gateway
+    depends_on:
+      document-service:
+        condition: service_started
+    environment:
+      DOCUMENT_SERVICE_BASE_URL: http://document-service:8081
+      WEB_ORIGIN: http://localhost:5173
+      ALLOW_DEV_TOKENS: "true"
+    ports:
+      - "8080:8080"
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        VITE_GATEWAY_BASE_URL: ""
+        VITE_DEV_TOKEN: dev-token-u1
+    container_name: relaydocs-web
+    depends_on:
+      gateway:
+        condition: service_started
+    ports:
+      - "5173:80"
 
   redpanda:
     image: docker.redpanda.com/redpandadata/redpanda:v24.2.8

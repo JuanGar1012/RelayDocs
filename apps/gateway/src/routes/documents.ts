@@ -7,6 +7,7 @@ import {
 import { requireAuth } from "../middleware/requireAuth.js";
 import {
   createDocumentBodySchema,
+  documentIdParamSchema,
   shareDocumentBodySchema,
   updateDocumentBodySchema
 } from "../schemas/documents.js";
@@ -23,24 +24,12 @@ function getAuthUserId(request: AuthenticatedRequest): string {
 }
 
 function getDocumentIdParam(request: AuthenticatedRequest): string {
-  const rawId = request.params.id;
-
-  if (typeof rawId === "string" && rawId.length > 0) {
-    return rawId;
-  }
-
-  throw new ZodError([
-    {
-      code: "custom",
-      message: "Invalid document id",
-      path: ["id"]
-    }
-  ]);
+  return documentIdParamSchema.parse(request.params.id);
 }
 
 function mapError(response: Response, error: unknown): void {
   if (error instanceof ZodError) {
-    response.status(400).json({ message: "Invalid request body", errors: error.issues });
+    response.status(400).json({ message: "Invalid request", errors: error.issues });
     return;
   }
 

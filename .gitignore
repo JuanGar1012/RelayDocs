@@ -2,6 +2,7 @@ node_modules/
 .pnpm-store/
 dist/
 build/
+target/
 coverage/
 *.log
 .env
@@ -10,3 +11,5 @@ coverage/
 .idea/
 .vscode/
 .DS_Store
+playwright-report/
+test-results/

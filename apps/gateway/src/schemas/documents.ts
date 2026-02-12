@@ -17,6 +17,10 @@ export const shareDocumentBodySchema = z.object({
   role: z.enum(["viewer", "editor"])
 });
 
+export const documentIdParamSchema = z.string().regex(/^[1-9]\d*$/, {
+  message: "Invalid document id"
+});
+
 export type CreateDocumentBody = z.infer<typeof createDocumentBodySchema>;
 export type UpdateDocumentBody = z.infer<typeof updateDocumentBodySchema>;
 export type ShareDocumentBody = z.infer<typeof shareDocumentBodySchema>;

@@ -120,6 +120,9 @@ public class DocumentService {
         if (!document.getOwner().getId().equals(actorUserId)) {
             throw new ApiForbiddenException("Forbidden");
         }
+        if (actorUserId.equals(request.userId())) {
+            throw new ApiBadRequestException("Owner already has full access");
+        }
 
         UserEntity targetUser = getOrCreateUser(request.userId());
         Optional<DocumentPermissionEntity> existingPermission = documentPermissionRepository.findByDocumentIdAndUserId(

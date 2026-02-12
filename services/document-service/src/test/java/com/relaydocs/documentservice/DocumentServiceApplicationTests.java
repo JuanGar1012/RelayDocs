@@ -91,4 +91,35 @@ class DocumentServiceApplicationTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.document.content").value("Updated by owner"));
     }
+
+    @Test
+    void ownerCannotShareDocumentWithSelf() throws Exception {
+        String createResponse = mockMvc.perform(post("/api/v1/documents")
+                        .header("X-User-Id", "owner-self")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "Doc Self",
+                                  "content": "Body Self"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        String documentId = createResponse.replaceAll(".*\\\"id\\\":(\\d+).*", "$1");
+
+        mockMvc.perform(post("/api/v1/documents/{id}/share", documentId)
+                        .header("X-User-Id", "owner-self")
+                        .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                                {
+                                  "userId": "owner-self",
+                                  "role": "viewer"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Invalid request"));
+    }
 }

@@ -1,60 +1,65 @@
-﻿# PROJECT_STATE
+# PROJECT_STATE
 
 ## Goal
-- Deliver a production-style collaborative document management platform (RelayDocs) with deterministic behavior, strict typing, validated API boundaries, server-enforced authorization, and interview-ready engineering quality.
+- Deliver RelayDocs as a production-style collaborative document platform with deterministic behavior, strict typing, validated API boundaries, and server-enforced authorization.
 
 ## Non-Goals
-- Large refactors not explicitly requested.
-- Relaxing strict typing, RBAC, or validation guarantees.
-- Adding secrets to source code or logs.
+- Sweeping refactors without request.
+- Relaxing strict TypeScript, RBAC, or validation rules.
+- Storing secrets in code/logs.
 
 ## Current Architecture
-- Frontend: `apps/web` (React + TypeScript + Vite + Tailwind, Router, TanStack Query).
-- API Gateway: `apps/gateway` (Node.js + TypeScript + Zod, JWT/dev-token auth, REST aggregation/proxy).
-- Microservice: `services/document-service` (Spring Boot MVC + JPA/Hibernate + Bean Validation).
-- Database: PostgreSQL schema/scripts in `infra/sql`.
-- Events: Kafka-compatible broker (Redpanda via Docker), domain events planned/used for document and permission changes.
+- Frontend: `apps/web` (React + TypeScript + Vite + Tailwind + React Router + TanStack Query).
+- API Gateway: `apps/gateway` (Node.js + TypeScript + Zod validation + token auth).
+- Document microservice: `services/document-service` (Spring Boot MVC + JPA/Hibernate + Bean Validation + Flyway).
+- Data: PostgreSQL 16, schema managed by Flyway migration `V1__init.sql`.
+- Events: Redpanda (Kafka-compatible) provisioned in compose; publish-side wiring exists.
+- Runtime: `docker-compose.yml` orchestrates `postgres`, `redpanda`, `document-service`, `gateway`, and `web`.
 
-## Data Model (Current/Planned Core)
-- `users`
-- `documents` (owner, title, content/body, timestamps)
-- sharing/RBAC join structure for per-document permissions (reader/editor/owner semantics)
-- event payloads for `document.created`, `document.updated`, `document.shared`, `permission.changed`
+## Data Model
+- `users` table for principals.
+- `documents` table for owned content (`title`, `content`, timestamps, owner id).
+- `document_permissions` join model for per-user access (`viewer`/`editor`) with owner guards.
+- Domain event types: `document.created`, `document.updated`, `document.shared`, `permission.changed`.
 
 ## Key Commands
-- Install deps: `npm install`
-- Infra up: `docker compose up -d`
-- Frontend dev: `npm run dev:web`
-- Gateway dev: `npm run dev:gateway`
-- Workspace build: `npm run build`
-- Workspace test: `npm test`
-- Workspace lint: `npm run lint`
-- Spring service dev: `cd services/document-service && mvn spring-boot:run`
+- Install JS deps: `npm install`
+- Start full stack: `docker compose up --build -d`
+- Stop full stack: `docker compose down`
+- Reset stack volumes: `docker compose down -v && docker compose up --build -d`
+- Web dev mode: `npm run dev:web`
+- Gateway dev mode: `npm run dev:gateway`
+- Spring dev mode: `cd services/document-service && mvn spring-boot:run`
+- Workspace tests: `npm test`
+- E2E tests: `npm run test:e2e`
+- Lint: `npm run lint`
 
-## Files Created/Modified (This Checkpoint)
-- `PROJECT_STATE.md`: canonical concise state snapshot.
-- `CHECKPOINTS/PROJECT_STATE_2026-02-11_1333.md`: timestamped snapshot copy.
-- `DECISIONS.md`: appended dated decision log entry for checkpointing baseline.
+## Files Created/Modified And Why
+- `services/document-service/pom.xml`: added Flyway PostgreSQL module to support Postgres 16.x migrations at runtime.
+- `apps/web/nginx.conf`: added SPA static `root`/`index` directives to stop Nginx internal redirect cycle on route refreshes.
+- `e2e/playwright.config.ts`, `e2e/tests/smoke.spec.ts`: smoke coverage for create/open flow.
+- `docker-compose.yml`: production-like local orchestration path used as the default manual test flow.
 
 ## Completed
-- Monorepo scaffold established (`apps/*`, `services/*`, `infra/*`).
-- Root workspace scripts configured for web/gateway/build/test/lint/format.
-- Baseline service boundaries and gateway document route contract documented.
-- Checkpoint artifacts created and synchronized.
+- Compose stack fully validated on Docker host.
+- All five services running together: web, gateway, document-service, postgres, redpanda.
+- Flyway migration path verified end-to-end against PostgreSQL 16 (`V1` applied).
+- Web routing runtime issue fixed (`/documents` no longer serves 500 from Nginx loop).
+- Playwright browsers installed locally.
+- E2E smoke test passes (`npm run test:e2e`).
 
 ## Open Tasks (Prioritized)
-1. Finalize and verify PostgreSQL schema + migration path for documents and RBAC join tables.
-2. Implement/verify strict gateway request/response validation and authz forwarding rules.
-3. Complete Spring document-service endpoints with validation, JPA mappings, and deterministic error handling.
-4. Implement event publication/consumption with idempotency guarantees.
-5. Add/expand automated tests across frontend, gateway, service, and E2E paths.
+1. Implement Kafka consumer idempotency/replay protection and add reliability tests.
+2. Add negative-path E2E tests (forbidden edit/share, malformed ids, auth failures).
+3. Add CI workflow gates for lint/test/build/e2e.
+4. Expand service-level tests around RBAC edge cases and concurrent updates.
 
 ## Known Issues / Edge Cases
-- No git metadata available from current working directory context (`git status` unavailable).
-- Kafka event toggles and idempotency behavior require explicit runtime verification.
-- RBAC edge cases (owner transfer, duplicate shares, stale permission cache) need explicit test coverage.
+- Existing pre-Flyway local DB volumes may require `docker compose down -v` before first migration-managed boot.
+- Consumer-side idempotency for domain events is not implemented yet.
+- E2E currently validates only the happy path (single smoke flow).
 
 ## Next 3 Actions
-- [ ] Validate DB schema and indexes against required RBAC/document access queries.
-- [ ] Add/verify gateway Zod schemas and authorization checks at all document endpoints.
-- [ ] Add service and gateway integration tests for share/update permission edge cases.
+- [ ] Implement idempotent Kafka consumer strategy (dedupe key/store + retry semantics).
+- [ ] Add at least 3 negative E2E scenarios for permissions and invalid ids.
+- [ ] Wire CI jobs to enforce lint + unit/integration + E2E on PRs.

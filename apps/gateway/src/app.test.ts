@@ -170,4 +170,13 @@ describe("gateway", () => {
     const response = await request(app).get("/api/v1/documents");
     expect(response.status).toBe(401);
   });
+
+  it("rejects invalid document ids at the gateway boundary", async () => {
+    const response = await request(app)
+      .get("/api/v1/documents/not-a-number")
+      .set(authHeader("u1"));
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toBe("Invalid request");
+  });
 });

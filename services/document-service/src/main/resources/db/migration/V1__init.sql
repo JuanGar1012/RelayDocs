@@ -1,10 +1,10 @@
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE users (
     id VARCHAR(100) PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS documents (
+CREATE TABLE documents (
     id BIGSERIAL PRIMARY KEY,
     owner_id VARCHAR(100) NOT NULL REFERENCES users(id),
     title VARCHAR(255) NOT NULL,
@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS documents (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS document_permissions (
+CREATE TABLE document_permissions (
     id BIGSERIAL PRIMARY KEY,
     document_id BIGINT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
     user_id VARCHAR(100) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -22,20 +22,6 @@ CREATE TABLE IF NOT EXISTS document_permissions (
     UNIQUE (document_id, user_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_documents_owner_id ON documents(owner_id);
-CREATE INDEX IF NOT EXISTS idx_document_permissions_document_id ON document_permissions(document_id);
-CREATE INDEX IF NOT EXISTS idx_document_permissions_user_id ON document_permissions(user_id);
-
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1
-        FROM pg_constraint
-        WHERE conname = 'ck_document_permissions_role'
-    ) THEN
-        ALTER TABLE document_permissions
-            ADD CONSTRAINT ck_document_permissions_role
-            CHECK (role IN ('VIEWER', 'EDITOR'));
-    END IF;
-END
-$$;
+CREATE INDEX idx_documents_owner_id ON documents(owner_id);
+CREATE INDEX idx_document_permissions_document_id ON document_permissions(document_id);
+CREATE INDEX idx_document_permissions_user_id ON document_permissions(user_id);
