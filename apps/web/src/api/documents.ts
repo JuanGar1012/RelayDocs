@@ -6,9 +6,9 @@ import type {
   SingleDocumentResponse,
   UpdateDocumentBody
 } from "../types/documents";
+import { getAuthToken } from "../auth/session";
 
 const BASE_URL = import.meta.env.VITE_GATEWAY_BASE_URL ?? "http://localhost:8080";
-const DEV_TOKEN = import.meta.env.VITE_DEV_TOKEN ?? "dev-token-u1";
 
 interface ErrorPayload {
   message?: string;
@@ -27,11 +27,13 @@ function parseErrorPayload(value: unknown): ErrorPayload {
 }
 
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = getAuthToken();
+
   const response = await fetch(`${BASE_URL}${path}`, {
     ...init,
     headers: {
       "content-type": "application/json",
-      authorization: `Bearer ${DEV_TOKEN}`,
+      authorization: `Bearer ${token}`,
       ...init?.headers
     }
   });

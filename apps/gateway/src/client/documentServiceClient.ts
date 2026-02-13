@@ -4,6 +4,7 @@ import type {
   ShareDocumentBody,
   UpdateDocumentBody
 } from "../schemas/documents.js";
+import type { LoginBody, SignupBody } from "../schemas/auth.js";
 
 interface ErrorBody {
   message?: string;
@@ -19,6 +20,8 @@ export class DownstreamServiceError extends Error {
 }
 
 export interface DocumentServiceClient {
+  signup(body: SignupBody): Promise<{ userId: string }>;
+  login(body: LoginBody): Promise<{ userId: string }>;
   listDocuments(userId: string): Promise<DocumentRecord[]>;
   createDocument(userId: string, body: CreateDocumentBody): Promise<DocumentRecord>;
   getDocument(userId: string, id: string): Promise<DocumentRecord>;
@@ -34,6 +37,12 @@ interface ListDocumentApiResponse {
   documents: DocumentRecord[];
 }
 
+interface AuthUserApiResponse {
+  user: {
+    userId: string;
+  };
+}
+
 function parseErrorBody(value: unknown): ErrorBody {
   if (typeof value === "object" && value !== null && "message" in value) {
     const maybeMessage = (value as { message?: unknown }).message;
@@ -47,14 +56,19 @@ function parseErrorBody(value: unknown): ErrorBody {
 }
 
 export function createHttpDocumentServiceClient(baseUrl: string): DocumentServiceClient {
-  async function request<T>(path: string, userId: string, init?: RequestInit): Promise<T> {
+  async function request<T>(path: string, userId: string | null, init?: RequestInit): Promise<T> {
+    const headers: Record<string, string> = {
+      "content-type": "application/json",
+      ...(init?.headers as Record<string, string> | undefined)
+    };
+
+    if (userId) {
+      headers["x-user-id"] = userId;
+    }
+
     const response = await fetch(`${baseUrl}${path}`, {
       ...init,
-      headers: {
-        "content-type": "application/json",
-        "x-user-id": userId,
-        ...init?.headers
-      }
+      headers
     });
 
     const responseBody = (await response.json().catch((): null => null)) as unknown;
@@ -68,6 +82,22 @@ export function createHttpDocumentServiceClient(baseUrl: string): DocumentServic
   }
 
   return {
+    async signup(body: SignupBody): Promise<{ userId: string }> {
+      const response = await request<AuthUserApiResponse>("/api/v1/auth/signup", null, {
+        method: "POST",
+        body: JSON.stringify(body)
+      });
+
+      return { userId: response.user.userId };
+    },
+    async login(body: LoginBody): Promise<{ userId: string }> {
+      const response = await request<AuthUserApiResponse>("/api/v1/auth/login", null, {
+        method: "POST",
+        body: JSON.stringify(body)
+      });
+
+      return { userId: response.user.userId };
+    },
     async listDocuments(userId: string): Promise<DocumentRecord[]> {
       const response = await request<ListDocumentApiResponse>("/api/v1/documents", userId);
       return response.documents;

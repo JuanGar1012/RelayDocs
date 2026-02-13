@@ -5,6 +5,7 @@ import {
   createHttpDocumentServiceClient,
   type DocumentServiceClient
 } from "./client/documentServiceClient.js";
+import { createAuthRouter } from "./routes/auth.js";
 import { createDocumentRouter } from "./routes/documents.js";
 
 interface CreateAppOptions {
@@ -39,6 +40,7 @@ export function createApp(options?: CreateAppOptions): express.Express {
   });
 
   app.use("/api/v1/documents", createDocumentRouter(documentServiceClient));
+  app.use("/api/v1/auth", createAuthRouter(documentServiceClient));
 
   return app;
 }

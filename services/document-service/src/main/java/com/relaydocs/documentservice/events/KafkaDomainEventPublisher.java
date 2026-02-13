@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Component
 @ConditionalOnProperty(name = "relaydocs.events.kafka.enabled", havingValue = "true")
@@ -31,6 +32,7 @@ public class KafkaDomainEventPublisher implements DomainEventPublisher {
     @Override
     public void publish(String eventType, String aggregateId, Map<String, Object> payload) {
         Map<String, Object> envelope = new LinkedHashMap<>();
+        envelope.put("eventId", UUID.randomUUID().toString());
         envelope.put("eventType", eventType);
         envelope.put("aggregateId", aggregateId);
         envelope.put("occurredAt", Instant.now().toString());

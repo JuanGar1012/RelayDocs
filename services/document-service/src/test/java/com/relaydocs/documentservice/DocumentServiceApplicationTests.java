@@ -122,4 +122,43 @@ class DocumentServiceApplicationTests {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Invalid request"));
     }
+
+    @Test
+    void signupAndLoginFlow() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "username": "auth-user",
+                                  "password": "password123"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.user.userId").value("auth-user"));
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "username": "auth-user",
+                                  "password": "password123"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.user.userId").value("auth-user"));
+    }
+
+    @Test
+    void loginRejectsInvalidCredentials() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "username": "missing-user",
+                                  "password": "password123"
+                                }
+                                """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Invalid credentials"));
+    }
 }

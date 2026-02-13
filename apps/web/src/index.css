@@ -4,11 +4,102 @@
 
 :root {
   color-scheme: light;
+  --bg-top: #eef5ff;
+  --bg-mid: #dbeafe;
+  --bg-bottom: #bfdbfe;
+  --surface: rgba(255, 255, 255, 0.9);
+  --surface-border: rgba(37, 99, 235, 0.16);
+  --text-primary: #0f172a;
+  --text-secondary: #1e3a8a;
+  --btn-start: #2563eb;
+  --btn-mid: #1d4ed8;
+  --btn-end: #1e40af;
+  --btn-contrast: #eff6ff;
 }
 
 body {
   margin: 0;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  background: #f4f6f8;
-  color: #111827;
+  background:
+    radial-gradient(120% 120% at 0% 0%, #ffffff 0%, transparent 48%),
+    linear-gradient(165deg, var(--bg-top) 0%, var(--bg-mid) 48%, var(--bg-bottom) 100%);
+  background-attachment: fixed;
+  color: var(--text-primary);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app-shell {
+  min-height: 100vh;
+  background: linear-gradient(180deg, rgba(219, 234, 254, 0.5) 0%, rgba(191, 219, 254, 0.18) 100%);
+}
+
+.glass-card {
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  box-shadow: 0 10px 35px rgba(30, 58, 138, 0.11);
+  backdrop-filter: blur(4px);
+}
+
+.btn-animated {
+  position: relative;
+  overflow: hidden;
+  border: 0;
+  color: white;
+  transition: transform 160ms ease, box-shadow 180ms ease, color 180ms ease;
+}
+
+.btn-animated::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(219, 234, 254, 0.4) 52%, rgba(255, 255, 255, 0) 100%);
+  transform: translateX(-108%);
+  transition: transform 420ms ease;
+}
+
+.btn-animated:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(29, 78, 216, 0.28);
+}
+
+.btn-animated:hover::after {
+  transform: translateX(108%);
+}
+
+.btn-animated:active {
+  transform: translateY(0);
+}
+
+.btn-animated:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
+
+.interactive-focus:focus-visible {
+  outline: 3px solid #1d4ed8;
+  outline-offset: 2px;
+}
+
+.btn-primary {
+  background: linear-gradient(110deg, var(--btn-start) 0%, var(--btn-mid) 48%, var(--btn-end) 100%);
+}
+
+.btn-secondary {
+  color: var(--btn-contrast);
+  background: linear-gradient(110deg, #1e3a8a 0%, #1d4ed8 52%, #2563eb 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-animated,
+  .btn-animated::after {
+    transition: none;
+  }
+
+  .btn-animated:hover {
+    transform: none;
+    box-shadow: none;
+  }
 }

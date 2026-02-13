@@ -3,6 +3,7 @@ package com.relaydocs.documentservice.api;
 import com.relaydocs.documentservice.service.ApiBadRequestException;
 import com.relaydocs.documentservice.service.ApiForbiddenException;
 import com.relaydocs.documentservice.service.ApiNotFoundException;
+import com.relaydocs.documentservice.service.ApiUnauthorizedException;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +25,11 @@ public class ApiExceptionHandler {
     @ExceptionHandler(ApiForbiddenException.class)
     public ResponseEntity<Map<String, String>> handleForbidden(ApiForbiddenException exception) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", exception.getMessage()));
+    }
+
+    @ExceptionHandler(ApiUnauthorizedException.class)
+    public ResponseEntity<Map<String, String>> handleUnauthorized(ApiUnauthorizedException exception) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", exception.getMessage()));
     }
 
     @ExceptionHandler({

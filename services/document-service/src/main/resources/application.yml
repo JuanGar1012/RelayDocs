@@ -24,4 +24,7 @@ relaydocs:
   events:
     kafka:
       enabled: ${RELAYDOCS_KAFKA_EVENTS_ENABLED:false}
+      consumer-enabled: ${RELAYDOCS_KAFKA_CONSUMER_ENABLED:false}
     kafka-topic: ${RELAYDOCS_KAFKA_TOPIC:relaydocs.domain-events}
+    kafka-consumer-group-id: ${RELAYDOCS_KAFKA_CONSUMER_GROUP_ID:relaydocs-document-service-consumer}
+    kafka-consumer-name: ${RELAYDOCS_KAFKA_CONSUMER_NAME:document-service}

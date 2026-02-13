@@ -15,6 +15,7 @@ function authHeader(userId: string): { authorization: string } {
 
 function createMockDocumentClient(): DocumentServiceClient {
   const documents: DocumentRecord[] = [];
+  const users = new Map<string, string>();
   let nextId = 1;
 
   function getDocumentOrThrow(id: string): DocumentRecord {
@@ -28,6 +29,23 @@ function createMockDocumentClient(): DocumentServiceClient {
   }
 
   return {
+    async signup(body): Promise<{ userId: string }> {
+      if (users.has(body.username)) {
+        throw new DownstreamServiceError(400, "Username already exists");
+      }
+
+      users.set(body.username, body.password);
+      return { userId: body.username };
+    },
+    async login(body): Promise<{ userId: string }> {
+      const existingPassword = users.get(body.username);
+
+      if (!existingPassword || existingPassword !== body.password) {
+        throw new DownstreamServiceError(401, "Invalid credentials");
+      }
+
+      return { userId: body.username };
+    },
     async listDocuments(userId: string): Promise<DocumentRecord[]> {
       return documents.filter((document) => {
         return document.ownerUserId === userId || document.sharedWith[userId] !== undefined;
@@ -178,5 +196,23 @@ describe("gateway", () => {
 
     expect(response.status).toBe(400);
     expect(response.body.message).toBe("Invalid request");
+  });
+
+  it("signs up and logs in a user", async () => {
+    const signupResponse = await request(app)
+      .post("/api/v1/auth/signup")
+      .send({ username: "new-user", password: "password123" });
+
+    expect(signupResponse.status).toBe(201);
+    expect(typeof signupResponse.body.token).toBe("string");
+    expect(signupResponse.body.userId).toBe("new-user");
+
+    const loginResponse = await request(app)
+      .post("/api/v1/auth/login")
+      .send({ username: "new-user", password: "password123" });
+
+    expect(loginResponse.status).toBe(200);
+    expect(typeof loginResponse.body.token).toBe("string");
+    expect(loginResponse.body.userId).toBe("new-user");
   });
 });
