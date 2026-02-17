@@ -11,7 +11,10 @@ describe("documentServiceClient", () => {
   });
 
   it("forwards x-user-id header for downstream requests", async () => {
-    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit): Promise<Response> => {
+    let capturedRequestInit: RequestInit | undefined;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+      void input;
+      capturedRequestInit = init;
       return new Response(JSON.stringify({ documents: [] }), {
         status: 200,
         headers: { "content-type": "application/json" }
@@ -24,15 +27,17 @@ describe("documentServiceClient", () => {
     await client.listDocuments("u-123");
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    const requestInit = fetchMock.mock.calls[0]?.[1] as RequestInit | undefined;
-    expect(requestInit?.headers).toMatchObject({
+    expect(capturedRequestInit?.headers).toMatchObject({
       "x-user-id": "u-123",
       "content-type": "application/json"
     });
   });
 
   it("maps share roles to upstream enum casing", async () => {
-    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit): Promise<Response> => {
+    let capturedRequestInit: RequestInit | undefined;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+      void input;
+      capturedRequestInit = init;
       return new Response(
         JSON.stringify({
           document: {
@@ -57,13 +62,12 @@ describe("documentServiceClient", () => {
     const client = createHttpDocumentServiceClient("http://document-service:8081");
     await client.shareDocument("owner", "1", { userId: "target-user", role: "viewer" });
 
-    const requestInit = fetchMock.mock.calls[0]?.[1] as RequestInit | undefined;
-    expect(requestInit?.method).toBe("POST");
-    expect(requestInit?.body).toBe(JSON.stringify({ userId: "target-user", role: "VIEWER" }));
+    expect(capturedRequestInit?.method).toBe("POST");
+    expect(capturedRequestInit?.body).toBe(JSON.stringify({ userId: "target-user", role: "VIEWER" }));
   });
 
   it("propagates downstream message for 4xx/5xx responses", async () => {
-    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit): Promise<Response> => {
+    const fetchMock = vi.fn(async (): Promise<Response> => {
       return new Response(JSON.stringify({ message: "Forbidden" }), {
         status: 403,
         headers: { "content-type": "application/json" }
@@ -83,7 +87,7 @@ describe("documentServiceClient", () => {
   });
 
   it("falls back to a default downstream error message for non-json responses", async () => {
-    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit): Promise<Response> => {
+    const fetchMock = vi.fn(async (): Promise<Response> => {
       return new Response("bad gateway", { status: 502 });
     });
 

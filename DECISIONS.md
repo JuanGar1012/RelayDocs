@@ -12,3 +12,42 @@
 - Kept PostgreSQL at version 16 in `docker-compose.yml` and fixed compatibility in the service dependency layer rather than downgrading the DB image.
 - Updated `apps/web/nginx.conf` with explicit `root /usr/share/nginx/html;` and `index index.html;` to eliminate SPA route refresh redirect loops that returned HTTP 500.
 - Confirmed Docker compose as canonical verification path by requiring successful `docker compose up --build -d` and passing `npm run test:e2e` smoke before advancing to next feature work.
+- Introduced a split runtime model to reduce iteration friction: full stack in compose for integrated verification, and live-edit mode with compose infra + local gateway/web watchers.
+- Standardized live-edit ports to `8082` (gateway) and `5174` (web) to avoid repeated conflicts with compose defaults (`8080`/`5173`).
+- Hardened gateway startup in `apps/gateway/src/index.ts` with explicit HTTP server creation, robust `EADDRINUSE` error handling, and process-level fatal handlers for deterministic crash behavior.
+- Adopted `.env`-driven configuration across root compose and app-level development (`.env.example`, `apps/gateway/.env.example`, `apps/web/.env.example`) and removed script-level env overrides.
+- Added initial visual polish baseline (blue gradient surface system, animated button hover treatment, and document list empty state) as the active UI direction for continued iteration.
+- Implemented consumer-side idempotency with durable dedupe storage (`consumed_events`), unique-key replay protection, and fallback hash keying when inbound events do not include `eventId`.
+- Added Kafka consumer retry policy with non-retryable malformed-payload handling and bounded retry/backoff for transient failures.
+- Expanded Playwright coverage with three negative-path tests (forbidden viewer edit, malformed document id, owner self-share rejection) and stabilized smoke test sequencing by waiting for create API response.
+- Added GitHub Actions CI gates (`.github/workflows/ci.yml`) covering Node lint/test/build, Spring tests, and compose-backed E2E.
+- Fixed compose/runtime gateway drift by setting container `PORT=8080` explicitly so local app-level `.env` does not break container health/routes.
+- Added focused `DocumentService` unit coverage for RBAC edge and sequential concurrent-write behavior instead of broad integration refactoring, preserving small diffs while validating authorization semantics and deterministic last-write outcomes.
+- Prioritized an accessibility-focused UI polish pass in `apps/web` with consistent keyboard focus visibility, explicit loading/error semantics (`role=status`/`role=alert`), and safer disabled action states during pending or empty submissions.
+- Tuned CI runtime/stability preemptively by enabling workflow-level concurrency cancellation, job timeout caps, and Playwright browser caching; kept first GitHub-run confirmation as a follow-up verification step.
+- Added frontend login/session handling in `apps/web` to support practical multi-user RBAC/concurrency validation directly in the UI, using persisted bearer tokens (`dev-token-*` or custom token) without introducing a separate auth service yet.
+
+## 2026-02-13
+- Updated handoff documentation flow to keep completed work and pending work explicitly separated: `PROJECT_STATE.md` now carries a dated "Recent Actions" summary while `NEXT_SESSION_PROMPT.md` lists pending actions only.
+- Standardized `NEXT_SESSION_PROMPT.md` content to prioritize unresolved tasks first (CI validation, Kafka integration coverage, and compose operational notes) to reduce context drift across sessions.
+
+## 2026-02-13 (Checkpoint Auth Pivot)
+- Decided to implement simple username/password authentication without email, backed by database storage and exposed through Sign Up/Login UX, while preserving existing RBAC semantics tied to authenticated user identity.
+
+## 2026-02-13 (Auth Implementation)
+- Implemented authentication without email using a dedicated `auth_credentials` table with bcrypt password hashes, while keeping existing `users` table ownership/RBAC model intact.
+- Placed JWT issuance in the gateway (`/api/v1/auth/signup`, `/api/v1/auth/login`) and kept credential storage/verification in document-service to maintain current service boundaries with minimal refactor.
+- Removed frontend auto-login from `VITE_DEV_TOKEN` fallback so first entry now shows explicit Sign Up/Login actions and authenticated sessions are persisted via local storage token state.
+
+## 2026-02-13 (Checkpoint: Username/Password Auth Delivered)
+- Completed end-to-end username/password authentication using a database-backed credential table (`auth_credentials`) with bcrypt hashes, with no email requirement.
+- Kept JWT issuance in gateway while delegating credential creation/verification to document-service to minimize refactor and preserve current service boundaries.
+- Set web app first entry to explicit Sign Up/Login flows and session persistence, removing default env-based auto-login from canonical web env setup.
+- Preserved prior RBAC UX improvements (inline role switching + friendly forbidden messages) so manual authorization testing remains fast after auth rollout.
+
+## 2026-02-14
+- Migrated Playwright E2E auth/RBAC coverage from dev-token shortcuts to real username/password signup/login sessions and added a dedicated auth+RBAC+two-user update sequencing scenario.
+- Aligned gateway JWT verification fallback with JWT issuance fallback (`relaydocs-dev-secret`) to prevent 401 regressions when `JWT_SECRET` is unset in compose/dev defaults.
+- Added broker-backed Kafka consumer integration tests using Testcontainers and marked them `disabledWithoutDocker=true` to keep deterministic local/CI behavior when Docker is unavailable.
+- Tightened CI E2E readiness checks to include web endpoint availability before running Playwright to reduce startup race failures.
+- Added explicit Docker recovery/cache troubleshooting notes to README as the canonical operational guidance.

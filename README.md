@@ -22,13 +22,32 @@ Collaborative document management platform with a React frontend, Node API gatew
 
 1. Install JavaScript dependencies:
    - `npm install`
-2. Start full stack:
+2. Create local env files (first time only):
+   - `Copy-Item .env.example .env`
+   - `Copy-Item apps/gateway/.env.example apps/gateway/.env`
+   - `Copy-Item apps/web/.env.example apps/web/.env`
+3. Start full stack:
    - `docker compose up --build -d`
-3. Open the app:
+4. Open the app:
    - `http://localhost:5173`
-4. Check health:
+5. Check health:
    - `http://localhost:8080/health` (gateway)
    - `http://localhost:8081/health` (document-service)
+
+## Live Edit Development
+
+Use these commands in separate terminals for reliable local hot reload:
+
+1. Start only required infrastructure:
+   - `docker compose up -d postgres redpanda document-service`
+2. Run gateway in watch mode:
+   - `npm run dev:gateway`
+3. Run web with Vite HMR:
+   - `npm run dev:web`
+
+Live edit mode intentionally uses non-compose ports to avoid collisions:
+- Gateway: `http://localhost:8082`
+- Web (Vite): `http://localhost:5174`
 
 ## Gateway API Baseline
 
@@ -47,7 +66,6 @@ The gateway proxies these routes to the Spring `document-service` using `X-User-
 
 - Web:
   - `VITE_GATEWAY_BASE_URL` (default: `http://localhost:8080`; docker image uses same-origin proxy)
-  - `VITE_DEV_TOKEN` (default: `dev-token-u1`)
 - Gateway:
   - `DOCUMENT_SERVICE_BASE_URL` (default: `http://localhost:8081`)
   - `WEB_ORIGIN` (default: `http://localhost:5173`)
@@ -71,5 +89,30 @@ The gateway proxies these routes to the Spring `document-service` using `X-User-
    - `docker compose up --build -d`
 2. Install Playwright browsers (first time only):
    - `npx playwright install`
-3. Run smoke E2E tests:
+3. Run E2E tests (smoke + negative paths):
    - `npm run test:e2e`
+
+## Docker Recovery Notes
+
+- If Docker Desktop is not running, compose commands will fail with named-pipe connection errors.
+- If ports are already bound while switching runtime modes, stop compose `web` and `gateway` first:
+  - `docker compose stop web gateway`
+- If schema changes are not applying (especially Flyway auth migrations), reset volumes:
+  - `docker compose down -v --remove-orphans`
+- If Docker cache/snapshots become stale after repeated rebuilds, force a clean rebuild:
+  - `docker compose build --no-cache`
+
+## Session Handoff Automation
+
+- Initialize handoff scaffolding (useful in new repos):
+  - `npm run handoff:init`
+- Generate a next-session prompt from current checkpoint files:
+  - `npm run handoff:prompt`
+- Output file:
+  - `NEXT_SESSION_PROMPT.md`
+
+Recommended session process:
+1. Do work and verify changes with tests/builds.
+2. Update checkpoint context (`PROJECT_STATE.md`, `DECISIONS.md`).
+3. Run `npm run handoff:prompt`.
+4. Use `NEXT_SESSION_PROMPT.md` as the exact bootstrap prompt in the next session.
