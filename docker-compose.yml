@@ -1,17 +1,17 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:${POSTGRES_IMAGE_TAG:-16-alpine}
     container_name: relaydocs-postgres
     environment:
-      POSTGRES_DB: relaydocs
-      POSTGRES_USER: relaydocs
-      POSTGRES_PASSWORD: relaydocs
+      POSTGRES_DB: ${POSTGRES_DB:-relaydocs}
+      POSTGRES_USER: ${POSTGRES_USER:-relaydocs}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-relaydocs}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U relaydocs -d relaydocs"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-relaydocs} -d ${POSTGRES_DB:-relaydocs}"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -27,14 +27,14 @@ services:
       redpanda:
         condition: service_started
     environment:
-      DATABASE_URL: jdbc:postgresql://postgres:5432/relaydocs
-      DATABASE_USER: relaydocs
-      DATABASE_PASSWORD: relaydocs
+      DATABASE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-relaydocs}
+      DATABASE_USER: ${POSTGRES_USER:-relaydocs}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-relaydocs}
       KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
-      RELAYDOCS_KAFKA_EVENTS_ENABLED: "false"
-      RELAYDOCS_KAFKA_TOPIC: relaydocs.domain-events
+      RELAYDOCS_KAFKA_EVENTS_ENABLED: "${RELAYDOCS_KAFKA_EVENTS_ENABLED:-false}"
+      RELAYDOCS_KAFKA_TOPIC: ${RELAYDOCS_KAFKA_TOPIC:-relaydocs.domain-events}
     ports:
-      - "8081:8081"
+      - "${DOCUMENT_SERVICE_PORT:-8081}:8081"
 
   gateway:
     build:
@@ -45,28 +45,30 @@ services:
       document-service:
         condition: service_started
     environment:
+      PORT: "8080"
       DOCUMENT_SERVICE_BASE_URL: http://document-service:8081
-      WEB_ORIGIN: http://localhost:5173
-      ALLOW_DEV_TOKENS: "true"
+      WEB_ORIGIN: http://localhost:${WEB_PORT:-5173}
+      ALLOW_DEV_TOKENS: "${ALLOW_DEV_TOKENS:-true}"
+      JWT_SECRET: ${JWT_SECRET:-}
     ports:
-      - "8080:8080"
+      - "${GATEWAY_PORT:-8080}:8080"
 
   web:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
       args:
-        VITE_GATEWAY_BASE_URL: ""
-        VITE_DEV_TOKEN: dev-token-u1
+        VITE_GATEWAY_BASE_URL: ${WEB_BUILD_GATEWAY_BASE_URL:-}
+        VITE_DEV_TOKEN: ${VITE_DEV_TOKEN:-dev-token-u1}
     container_name: relaydocs-web
     depends_on:
       gateway:
         condition: service_started
     ports:
-      - "5173:80"
+      - "${WEB_PORT:-5173}:80"
 
   redpanda:
-    image: docker.redpanda.com/redpandadata/redpanda:v24.2.8
+    image: docker.redpanda.com/redpandadata/redpanda:${REDPANDA_IMAGE_TAG:-v24.2.8}
     container_name: relaydocs-redpanda
     command:
       - redpanda
@@ -86,8 +88,8 @@ services:
       - --advertise-kafka-addr
       - PLAINTEXT://localhost:9092
     ports:
-      - "9092:9092"
-      - "9644:9644"
+      - "${REDPANDA_KAFKA_PORT:-9092}:9092"
+      - "${REDPANDA_ADMIN_PORT:-9644}:9644"
 
 volumes:
   pg_data:

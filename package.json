@@ -7,8 +7,10 @@
     "apps/*"
   ],
   "scripts": {
-    "dev:web": "npm run dev -w web",
+    "dev:web": "npm run dev -w web -- --port 5174",
     "dev:gateway": "npm run dev -w gateway",
+    "handoff:init": "node scripts/init-handoff.mjs",
+    "handoff:prompt": "node scripts/generate-next-session-prompt.mjs",
     "build": "npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "test:e2e": "playwright test -c e2e/playwright.config.ts",
