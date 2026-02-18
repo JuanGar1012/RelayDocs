@@ -70,3 +70,5 @@
 - Hardened compose/CI JWT wiring by switching gateway runtime secret source to `GATEWAY_JWT_SECRET`, avoiding accidental override from unrelated global `JWT_SECRET` values in CI.
 - Added explicit CI env injection for `GATEWAY_JWT_SECRET` and compose log capture on E2E failure for faster diagnosis.
 - Converted `docs/PRODUCTION_READINESS.md` into a status-tracked execution checklist with a deployment-day gate (GO/NO-GO) and prioritized closure order.
+- Replaced staging/production deployment workflow placeholders with concrete deploy-hook commands and strict secret validation, enabling same-day deploy execution.
+- Added `docs/DEPLOYMENT_SECRETS.md` as canonical mapping for GitHub environment variables/secrets and platform runtime secrets.

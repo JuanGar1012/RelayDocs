@@ -21,13 +21,26 @@ jobs:
           ref: ${{ github.event.inputs.ref }}
 
       - name: Validate Deployment Inputs
+        env:
+          PROD_GATEWAY_DEPLOY_HOOK_URL: ${{ secrets.PROD_GATEWAY_DEPLOY_HOOK_URL }}
+          PROD_DOCUMENT_SERVICE_DEPLOY_HOOK_URL: ${{ secrets.PROD_DOCUMENT_SERVICE_DEPLOY_HOOK_URL }}
+          PROD_WEB_DEPLOY_HOOK_URL: ${{ secrets.PROD_WEB_DEPLOY_HOOK_URL }}
         run: |
           test -n "${{ vars.PROD_GATEWAY_URL }}" || (echo "Missing PROD_GATEWAY_URL variable" && exit 1)
+          test -n "$PROD_GATEWAY_DEPLOY_HOOK_URL" || (echo "Missing PROD_GATEWAY_DEPLOY_HOOK_URL secret" && exit 1)
+          test -n "$PROD_DOCUMENT_SERVICE_DEPLOY_HOOK_URL" || (echo "Missing PROD_DOCUMENT_SERVICE_DEPLOY_HOOK_URL secret" && exit 1)
+          test -n "$PROD_WEB_DEPLOY_HOOK_URL" || (echo "Missing PROD_WEB_DEPLOY_HOOK_URL secret" && exit 1)
 
-      - name: Deploy Production (Placeholder)
+      - name: Deploy Production Services Via Hooks
+        env:
+          PROD_GATEWAY_DEPLOY_HOOK_URL: ${{ secrets.PROD_GATEWAY_DEPLOY_HOOK_URL }}
+          PROD_DOCUMENT_SERVICE_DEPLOY_HOOK_URL: ${{ secrets.PROD_DOCUMENT_SERVICE_DEPLOY_HOOK_URL }}
+          PROD_WEB_DEPLOY_HOOK_URL: ${{ secrets.PROD_WEB_DEPLOY_HOOK_URL }}
         run: |
-          echo "Replace this step with your provider CLI/API deployment command."
-          echo "Deploying ref ${{ github.event.inputs.ref }} to production."
+          curl -fsS -X POST "$PROD_DOCUMENT_SERVICE_DEPLOY_HOOK_URL"
+          curl -fsS -X POST "$PROD_GATEWAY_DEPLOY_HOOK_URL"
+          curl -fsS -X POST "$PROD_WEB_DEPLOY_HOOK_URL"
+          echo "Triggered production deploy hooks for document-service, gateway, and web."
 
       - name: Production Smoke Check
         run: |
@@ -40,4 +53,3 @@ jobs:
           done
           echo "Production smoke check failed."
           exit 1
-

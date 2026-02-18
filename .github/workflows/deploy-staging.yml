@@ -22,13 +22,26 @@ jobs:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Validate Deployment Inputs
+        env:
+          STAGING_GATEWAY_DEPLOY_HOOK_URL: ${{ secrets.STAGING_GATEWAY_DEPLOY_HOOK_URL }}
+          STAGING_DOCUMENT_SERVICE_DEPLOY_HOOK_URL: ${{ secrets.STAGING_DOCUMENT_SERVICE_DEPLOY_HOOK_URL }}
+          STAGING_WEB_DEPLOY_HOOK_URL: ${{ secrets.STAGING_WEB_DEPLOY_HOOK_URL }}
         run: |
           test -n "${{ vars.STAGING_GATEWAY_URL }}" || (echo "Missing STAGING_GATEWAY_URL variable" && exit 1)
+          test -n "$STAGING_GATEWAY_DEPLOY_HOOK_URL" || (echo "Missing STAGING_GATEWAY_DEPLOY_HOOK_URL secret" && exit 1)
+          test -n "$STAGING_DOCUMENT_SERVICE_DEPLOY_HOOK_URL" || (echo "Missing STAGING_DOCUMENT_SERVICE_DEPLOY_HOOK_URL secret" && exit 1)
+          test -n "$STAGING_WEB_DEPLOY_HOOK_URL" || (echo "Missing STAGING_WEB_DEPLOY_HOOK_URL secret" && exit 1)
 
-      - name: Deploy Staging (Placeholder)
+      - name: Deploy Staging Services Via Hooks
+        env:
+          STAGING_GATEWAY_DEPLOY_HOOK_URL: ${{ secrets.STAGING_GATEWAY_DEPLOY_HOOK_URL }}
+          STAGING_DOCUMENT_SERVICE_DEPLOY_HOOK_URL: ${{ secrets.STAGING_DOCUMENT_SERVICE_DEPLOY_HOOK_URL }}
+          STAGING_WEB_DEPLOY_HOOK_URL: ${{ secrets.STAGING_WEB_DEPLOY_HOOK_URL }}
         run: |
-          echo "Replace this step with your provider CLI/API deployment command."
-          echo "Deploying commit ${{ github.event.workflow_run.head_sha || github.sha }} to staging."
+          curl -fsS -X POST "$STAGING_DOCUMENT_SERVICE_DEPLOY_HOOK_URL"
+          curl -fsS -X POST "$STAGING_GATEWAY_DEPLOY_HOOK_URL"
+          curl -fsS -X POST "$STAGING_WEB_DEPLOY_HOOK_URL"
+          echo "Triggered staging deploy hooks for document-service, gateway, and web."
 
       - name: Staging Smoke Check
         run: |
@@ -41,4 +54,3 @@ jobs:
           done
           echo "Staging smoke check failed."
           exit 1
-

@@ -11,7 +11,7 @@ These are the minimum controls to safely deploy today.
 - [x] `DONE` Gateway auth hardening (rate limit + lockout) active.
 - [x] `DONE` Health and readiness endpoints for gateway and document-service.
 - [x] `DONE` Request correlation IDs and structured request logs.
-- [ ] `PENDING` Real provider deploy commands in GitHub deploy workflows.
+- [x] `DONE` Real provider deploy commands in GitHub deploy workflows (deploy hooks).
 - [ ] `PENDING` Production secrets configured in platform secret manager.
 
 Go/No-Go rule for today:

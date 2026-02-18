@@ -134,6 +134,9 @@ Recommended session process:
 - Staging workflow: `.github/workflows/deploy-staging.yml`
   - Runs after successful `CI` on `main` (or manually) when `STAGING_DEPLOY_ENABLED=true` GitHub variable is set.
   - Requires `STAGING_GATEWAY_URL` GitHub variable for `/ready` smoke checks.
+  - Requires secrets: `STAGING_DOCUMENT_SERVICE_DEPLOY_HOOK_URL`, `STAGING_GATEWAY_DEPLOY_HOOK_URL`, `STAGING_WEB_DEPLOY_HOOK_URL`.
 - Production workflow: `.github/workflows/deploy-production.yml`
   - Manual dispatch workflow when `PROD_DEPLOY_ENABLED=true` GitHub variable is set.
   - Requires `PROD_GATEWAY_URL` GitHub variable for `/ready` smoke checks.
+  - Requires secrets: `PROD_DOCUMENT_SERVICE_DEPLOY_HOOK_URL`, `PROD_GATEWAY_DEPLOY_HOOK_URL`, `PROD_WEB_DEPLOY_HOOK_URL`.
+- Full variable/secret mapping is documented in `docs/DEPLOYMENT_SECRETS.md`.

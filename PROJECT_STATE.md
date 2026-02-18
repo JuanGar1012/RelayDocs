@@ -51,6 +51,7 @@
 - Deployment automation:
   - `.github/workflows/deploy-staging.yml`
   - `.github/workflows/deploy-production.yml`
+  - `docs/DEPLOYMENT_SECRETS.md`
 - Documentation and env updates:
   - `README.md`
   - `apps/gateway/.env.example`
@@ -65,6 +66,8 @@
 - Added document-service request correlation filter with MDC-based request ID in logs.
 - Implemented Redis-capable distributed auth rate limiting and account lockout, with in-memory fallback.
 - Added staging/production deployment workflow scaffolds with `/ready` smoke checks and environment variable gates.
+- Replaced deploy placeholders with hook-trigger deploy commands and explicit GitHub environment secret validation.
+- Added deployment secrets mapping doc for GitHub environments and platform runtime secret manager setup.
 - Validation completed:
   - `npm.cmd run lint -w gateway` passed.
   - `npm.cmd run build -w gateway` passed.
@@ -73,7 +76,7 @@
 
 ## Open Tasks (Prioritized)
 1. Complete today deployment gate items in `docs/PRODUCTION_READINESS.md` and deploy production.
-2. Replace deploy workflow placeholders with provider-specific commands and secret bindings.
+2. Configure GitHub environment secrets/variables in `docs/DEPLOYMENT_SECRETS.md`.
 3. Add CI security scans (dependency + container + SBOM).
 4. Implement observability stack baseline (metrics + tracing + alerts).
 5. Continue UI presentability sprint and accessibility pass.
@@ -85,8 +88,8 @@
 - Redis-backed auth controls activate only when `REDIS_URL` is set; otherwise fallback remains process-local and non-shared.
 
 ## Next 3 Actions
-- [ ] Push/merge current branch after CI checks on new hardening + deployment workflow files.
-- [ ] Replace deployment workflow placeholders with concrete provider deployment commands.
-- [ ] Begin UI presentability feature branch and execute first visual system pass.
+- [ ] Configure `staging` and `production` GitHub environment secrets/variables from `docs/DEPLOYMENT_SECRETS.md`.
+- [ ] Trigger staging deployment workflow and confirm `/ready` passes.
+- [ ] Trigger production deployment workflow and run post-deploy smoke path.
 
 
