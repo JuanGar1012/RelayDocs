@@ -67,3 +67,5 @@
 - Implemented Redis-capable distributed auth controls in gateway (rate limiting and account lockout) with deterministic in-memory fallback when Redis is absent.
 - Added staging and production deployment workflow scaffolds with post-deploy `/ready` smoke checks gated by GitHub environment variables.
 - Fixed CI E2E auth regression caused by strict production JWT enforcement by setting a strong local/CI default `JWT_SECRET` in docker-compose and `.env.example`.
+- Hardened compose/CI JWT wiring by switching gateway runtime secret source to `GATEWAY_JWT_SECRET`, avoiding accidental override from unrelated global `JWT_SECRET` values in CI.
+- Added explicit CI env injection for `GATEWAY_JWT_SECRET` and compose log capture on E2E failure for faster diagnosis.
