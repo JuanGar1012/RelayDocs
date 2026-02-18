@@ -28,3 +28,7 @@ relaydocs:
     kafka-topic: ${RELAYDOCS_KAFKA_TOPIC:relaydocs.domain-events}
     kafka-consumer-group-id: ${RELAYDOCS_KAFKA_CONSUMER_GROUP_ID:relaydocs-document-service-consumer}
     kafka-consumer-name: ${RELAYDOCS_KAFKA_CONSUMER_NAME:document-service}
+
+logging:
+  pattern:
+    level: "%5p [req:%X{requestId:-none}]"

@@ -119,9 +119,24 @@ function createMockDocumentClient(): DocumentServiceClient {
 
 let app = createApp({ documentServiceClient: createMockDocumentClient() });
 
+function createTestApp(readinessProbe?: () => Promise<boolean>) {
+  const baseOptions = {
+    documentServiceClient: createMockDocumentClient()
+  };
+
+  if (readinessProbe) {
+    return createApp({
+      ...baseOptions,
+      readinessProbe
+    });
+  }
+
+  return createApp(baseOptions);
+}
+
 describe("gateway", () => {
   beforeEach(() => {
-    app = createApp({ documentServiceClient: createMockDocumentClient() });
+    app = createTestApp(async () => true);
   });
 
   it("returns health", async () => {
@@ -129,6 +144,43 @@ describe("gateway", () => {
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ service: "gateway", status: "ok" });
+  });
+
+  it("returns and propagates request ids", async () => {
+    const response = await request(app).get("/health").set("x-request-id", "req-test-1");
+    expect(response.headers["x-request-id"]).toBe("req-test-1");
+  });
+
+  it("returns readiness when dependency is healthy", async () => {
+    const response = await request(app).get("/ready");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      service: "gateway",
+      status: "ok",
+      dependencies: { documentService: "ok" }
+    });
+  });
+
+  it("returns degraded readiness when dependency is unavailable", async () => {
+    app = createTestApp(async () => false);
+
+    const response = await request(app).get("/ready");
+
+    expect(response.status).toBe(503);
+    expect(response.body).toEqual({
+      service: "gateway",
+      status: "degraded",
+      dependencies: { documentService: "unavailable" }
+    });
+  });
+
+  it("sets security headers on responses", async () => {
+    const response = await request(app).get("/health");
+
+    expect(response.headers["x-content-type-options"]).toBe("nosniff");
+    expect(response.headers["x-frame-options"]).toBe("DENY");
+    expect(response.headers["content-security-policy"]).toContain("default-src 'none'");
   });
 
   it("creates and reads document for owner", async () => {

@@ -88,6 +88,8 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Start Stack
+        env:
+          GATEWAY_JWT_SECRET: relaydocs-ci-gateway-jwt-secret-0123456789012345
         run: docker compose up --build -d
 
       - name: Wait For Services
@@ -104,6 +106,10 @@ jobs:
 
       - name: Run E2E
         run: npm run test:e2e
+
+      - name: Capture Compose Logs On Failure
+        if: failure()
+        run: docker compose logs --tail=300
 
       - name: Upload Playwright Report
         if: failure()

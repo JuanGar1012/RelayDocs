@@ -1,11 +1,13 @@
 import { SignJWT } from "jose";
-import { Router, type Response } from "express";
+import { Router, type Request, type Response } from "express";
 import { ZodError } from "zod";
+import { getJwtSecret } from "../config/runtime.js";
 import {
   type DocumentServiceClient,
   DownstreamServiceError
 } from "../client/documentServiceClient.js";
 import { loginBodySchema, signupBodySchema } from "../schemas/auth.js";
+import { clearAuthFailures, isAccountLocked, recordAuthFailure } from "../security/authLockout.js";
 
 function mapError(response: Response, error: unknown): void {
   if (error instanceof ZodError) {
@@ -24,16 +26,6 @@ function mapError(response: Response, error: unknown): void {
   }
 
   response.status(500).json({ message: "Unexpected error" });
-}
-
-function getJwtSecret(): string {
-  const secret = process.env.JWT_SECRET;
-
-  if (typeof secret === "string" && secret.length > 0) {
-    return secret;
-  }
-
-  return "relaydocs-dev-secret";
 }
 
 async function issueToken(userId: string): Promise<string> {
@@ -62,13 +54,41 @@ export function createAuthRouter(documentServiceClient: DocumentServiceClient): 
   router.post("/login", async (request, response) => {
     try {
       const body = loginBodySchema.parse(request.body);
+      const requestIp = getRequestIp(request);
+      const locked = await isAccountLocked(body.username, requestIp);
+      if (locked) {
+        response.status(429).json({ message: "Account temporarily locked. Try again later." });
+        return;
+      }
+
       const user = await documentServiceClient.login(body);
+      await clearAuthFailures(body.username, requestIp);
       const token = await issueToken(user.userId);
       response.status(200).json({ token, userId: user.userId });
     } catch (error: unknown) {
+      if (error instanceof DownstreamServiceError && error.statusCode === 401) {
+        const body = loginBodySchema.safeParse(request.body);
+        if (body.success) {
+          const requestIp = getRequestIp(request);
+          const nowLocked = await recordAuthFailure(body.data.username, requestIp);
+          if (nowLocked) {
+            response.status(429).json({ message: "Account temporarily locked. Try again later." });
+            return;
+          }
+        }
+      }
+
       mapError(response, error);
     }
   });
 
   return router;
+}
+
+function getRequestIp(request: Request): string {
+  if (typeof request.ip === "string" && request.ip.length > 0) {
+    return request.ip;
+  }
+
+  return "unknown";
 }

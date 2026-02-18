@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { runWithRequestContext } from "../context/requestContext.js";
 import {
   createHttpDocumentServiceClient,
   DownstreamServiceError
@@ -24,11 +25,14 @@ describe("documentServiceClient", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const client = createHttpDocumentServiceClient("http://document-service:8081");
-    await client.listDocuments("u-123");
+    await runWithRequestContext("req-123", async () => {
+      await client.listDocuments("u-123");
+    });
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(capturedRequestInit?.headers).toMatchObject({
       "x-user-id": "u-123",
+      "x-request-id": "req-123",
       "content-type": "application/json"
     });
   });

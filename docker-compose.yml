@@ -49,7 +49,7 @@ services:
       DOCUMENT_SERVICE_BASE_URL: http://document-service:8081
       WEB_ORIGIN: http://localhost:${WEB_PORT:-5173}
       ALLOW_DEV_TOKENS: "${ALLOW_DEV_TOKENS:-true}"
-      JWT_SECRET: ${JWT_SECRET:-}
+      JWT_SECRET: ${GATEWAY_JWT_SECRET:-relaydocs-local-compose-jwt-secret-0123456789}
     ports:
       - "${GATEWAY_PORT:-8080}:8080"
 

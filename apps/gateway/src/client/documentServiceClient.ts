@@ -5,6 +5,7 @@ import type {
   UpdateDocumentBody
 } from "../schemas/documents.js";
 import type { LoginBody, SignupBody } from "../schemas/auth.js";
+import { getRequestId } from "../context/requestContext.js";
 
 interface ErrorBody {
   message?: string;
@@ -64,6 +65,11 @@ export function createHttpDocumentServiceClient(baseUrl: string): DocumentServic
 
     if (userId) {
       headers["x-user-id"] = userId;
+    }
+
+    const requestId = getRequestId();
+    if (requestId) {
+      headers["x-request-id"] = requestId;
     }
 
     const response = await fetch(`${baseUrl}${path}`, {

@@ -1,72 +1,92 @@
 # PROJECT_STATE
 
 ## Goal
-- Deliver RelayDocs as a production-style collaborative document platform with deterministic behavior, strict typing, validated API boundaries, and server-enforced authorization.
+- Deliver RelayDocs as a production-style collaborative document platform with deterministic behavior, strict typing, validated API boundaries, secure authorization, and deployable operational maturity.
 
 ## Non-Goals
 - Sweeping refactors without request.
-- Relaxing strict TypeScript, RBAC, or validation rules.
-- Storing secrets in code/logs.
+- Relaxing strict TypeScript, RBAC, or validation constraints.
+- Storing secrets in source code or logs.
 
 ## Current Architecture
 - Frontend: `apps/web` (React + TypeScript + Vite + Tailwind + React Router + TanStack Query).
-- API Gateway: `apps/gateway` (Node.js + TypeScript + Zod validation + JWT + auth middleware).
-- Document microservice: `services/document-service` (Spring Boot MVC + JPA/Hibernate + Bean Validation + Flyway).
+- API Gateway: `apps/gateway` (Node.js + TypeScript + Zod validation + JWT auth + structured request logging + correlation IDs + auth rate limiting + account lockout).
+- Document microservice: `services/document-service` (Spring Boot MVC + JPA/Hibernate + Bean Validation + Flyway + request correlation filter + DB readiness checks).
 - Data: PostgreSQL 16 with Flyway migrations (`V1__init.sql`, `V2__consumed_events.sql`, `V3__auth_credentials.sql`).
 - Events: Redpanda (Kafka-compatible), idempotent consumer dedupe via `consumed_events`.
 
 ## Data Model
-- `users`: principal records used by document ownership and RBAC.
-- `auth_credentials`: username (`user_id`) + bcrypt `password_hash`.
+- `users`: principal records for ownership and RBAC.
+- `auth_credentials`: username (`user_id`) + bcrypt password hash.
 - `documents`: owner, title/content, timestamps.
 - `document_permissions`: per-user `viewer`/`editor` roles.
 - `consumed_events`: idempotency replay tracking.
 
-## Key Commands
+## Key Commands (Dev/Test/Lint/Build)
 - Install deps: `npm install`
-- Full stack up: `docker compose up --build -d`
-- Full stack down: `docker compose down`
+- Full stack up/down: `docker compose up --build -d` / `docker compose down`
 - Reset volumes: `docker compose down -v --remove-orphans`
 - Live-edit infra: `docker compose stop web gateway && docker compose up -d postgres redpanda document-service`
-- Gateway tests: `npm run -w gateway test`
-- Web tests: `npm run -w web test`
+- Lint: `npm.cmd run lint`
+- Build: `npm.cmd run build`
+- Gateway tests: `npm.cmd run test -w gateway`
 - Service tests: `mvn -B -f services/document-service/pom.xml test`
-- E2E tests: `npm run test:e2e`
+- E2E tests: `npm.cmd run test:e2e`
 
 ## Files Created/Modified And Why (High Level)
-- `e2e/tests/helpers/auth.ts`: added reusable signup/login/session helpers for real auth flows.
-- `e2e/tests/smoke.spec.ts`, `e2e/tests/negative.spec.ts`: migrated from dev-token assumptions to real signup/login auth tokens.
-- `e2e/tests/auth-rbac-concurrency.spec.ts`: added browser+API end-to-end coverage for signup/login, RBAC role changes, and two-user update sequencing.
-- `apps/gateway/src/middleware/requireAuth.ts`: aligned JWT verification secret fallback with token issuer default (`relaydocs-dev-secret`) to prevent invalid-token regressions when `JWT_SECRET` is unset.
-- `services/document-service/pom.xml`: added test dependencies for `spring-kafka-test` and Testcontainers (`junit-jupiter`, `kafka`).
-- `services/document-service/src/test/java/com/relaydocs/documentservice/events/KafkaDomainEventConsumerIntegrationTest.java`: added broker-backed consumer integration tests (auto-skips when Docker is unavailable).
-- `.github/workflows/ci.yml`: tightened E2E service readiness check to include web endpoint (`http://localhost:5173`) before Playwright execution.
-- `README.md`: removed stale `VITE_DEV_TOKEN` web env note and added Docker recovery/cache notes.
+- Gateway correlation and logging:
+  - `apps/gateway/src/context/requestContext.ts`
+  - `apps/gateway/src/middleware/requestContext.ts`
+  - `apps/gateway/src/middleware/requestLogging.ts`
+  - `apps/gateway/src/client/documentServiceClient.ts`
+- Gateway distributed auth controls:
+  - `apps/gateway/src/security/redisClient.ts`
+  - `apps/gateway/src/security/authControlsConfig.ts`
+  - `apps/gateway/src/security/authLockout.ts`
+  - `apps/gateway/src/middleware/rateLimit.ts`
+  - `apps/gateway/src/routes/auth.ts`
+- Service correlation and logging:
+  - `services/document-service/src/main/java/com/relaydocs/documentservice/api/RequestCorrelationFilter.java`
+  - `services/document-service/src/main/resources/application.yml`
+- Deployment automation:
+  - `.github/workflows/deploy-staging.yml`
+  - `.github/workflows/deploy-production.yml`
+- Documentation and env updates:
+  - `README.md`
+  - `apps/gateway/.env.example`
+- Test updates:
+  - `apps/gateway/src/app.test.ts`
+  - `apps/gateway/src/client/documentServiceClient.test.ts`
+  - `services/document-service/src/test/java/com/relaydocs/documentservice/DocumentServiceApplicationTests.java`
 
 ## Completed
-- Manual-style browser validation coverage is now encoded in Playwright and passing with real authenticated users:
-  - signup/login flow
-  - RBAC viewer/edit restrictions
-  - role transition to editor
-  - two-user update sequencing
-- E2E suite is green locally against compose: `5 passed`.
-- Kafka broker-backed integration tests implemented for consumer execution and dedupe behavior.
-- Service/unit suites validated:
-  - `npm run -w gateway test` passed
-  - `npm run -w web test` passed
-  - `mvn -B -f services/document-service/pom.xml test` passed (Kafka integration tests skipped when Docker unavailable).
-- Operational Docker recovery notes documented in `README.md`.
+- Added request correlation IDs (`X-Request-Id`) and structured access logs in gateway.
+- Propagated gateway request IDs to document-service downstream calls.
+- Added document-service request correlation filter with MDC-based request ID in logs.
+- Implemented Redis-capable distributed auth rate limiting and account lockout, with in-memory fallback.
+- Added staging/production deployment workflow scaffolds with `/ready` smoke checks and environment variable gates.
+- Validation completed:
+  - `npm.cmd run lint -w gateway` passed.
+  - `npm.cmd run build -w gateway` passed.
+  - `npm.cmd --prefix C:\Users\juang\Dev\projects\Codex\RelayDocs run test -w gateway` passed (14 tests).
+  - `mvn -B -f C:\Users\juang\Dev\projects\Codex\RelayDocs\services\document-service\pom.xml test` passed (Kafka integration tests skipped without Docker as expected).
 
 ## Open Tasks (Prioritized)
-1. Confirm first GitHub CI run for auth + E2E updates and tune workflow/runtime if required.
-2. If GitHub runner shows Testcontainers instability, decide whether to enforce Docker requirement for Kafka integration tests in CI or keep `disabledWithoutDocker=true`.
+1. Re-run GitHub Actions E2E after dedicated `GATEWAY_JWT_SECRET` CI wiring fix and confirm green CI.
+2. Open/refresh PR for `feature/pr-workflow-checklist-docs` and merge after CI passes.
+3. Add provider-specific deploy steps (Render/Fly/Railway/AWS) to replace workflow placeholders.
+4. Add centralized log shipping/metrics backend wiring (e.g., OpenTelemetry + collector).
+5. Implement UI presentability sprint (design tokens, shell polish, empty/loading/error states, accessibility pass).
+6. Add E2E coverage for lockout/rate-limit behavior.
 
 ## Known Issues / Edge Cases
-- Docker Desktop must be running; otherwise compose/testcontainers fail with named-pipe connection errors.
-- Switching between full-compose and live-edit modes requires stopping compose `web/gateway` to avoid port conflicts.
+- Docker Desktop must be running; otherwise compose/Testcontainers fail with named-pipe connection errors.
+- Switching between full-compose and live-edit modes requires stopping compose `web/gateway` first to avoid port conflicts.
 - Older local volumes may need `docker compose down -v` so Flyway applies latest migrations cleanly.
+- Redis-backed auth controls activate only when `REDIS_URL` is set; otherwise fallback remains process-local and non-shared.
 
 ## Next 3 Actions
-- [ ] Validate first GitHub CI run and inspect `node-gates`, `document-service-tests`, and `e2e` job durations/failures.
-- [ ] If CI flakes on startup timing, increase E2E readiness wait or add compose health assertions for web/gateway/document-service.
-- [ ] Decide and document policy for Kafka integration tests on non-Docker environments (skip vs required runner capability).
+- [ ] Push/merge current branch after CI checks on new hardening + deployment workflow files.
+- [ ] Replace deployment workflow placeholders with concrete provider deployment commands.
+- [ ] Begin UI presentability feature branch and execute first visual system pass.
+

@@ -1,0 +1,43 @@
+name: Deploy Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to deploy (branch, tag, or commit SHA)"
+        required: true
+        default: "main"
+
+jobs:
+  deploy-production:
+    name: Deploy To Production
+    if: vars.PROD_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref }}
+
+      - name: Validate Deployment Inputs
+        run: |
+          test -n "${{ vars.PROD_GATEWAY_URL }}" || (echo "Missing PROD_GATEWAY_URL variable" && exit 1)
+
+      - name: Deploy Production (Placeholder)
+        run: |
+          echo "Replace this step with your provider CLI/API deployment command."
+          echo "Deploying ref ${{ github.event.inputs.ref }} to production."
+
+      - name: Production Smoke Check
+        run: |
+          for i in {1..30}; do
+            if curl -sf "${{ vars.PROD_GATEWAY_URL }}/ready" > /dev/null; then
+              echo "Production smoke check passed."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Production smoke check failed."
+          exit 1
+

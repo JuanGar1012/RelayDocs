@@ -1,0 +1,44 @@
+name: Deploy Staging
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    branches: [main]
+    types: [completed]
+  workflow_dispatch:
+
+jobs:
+  deploy-staging:
+    name: Deploy To Staging
+    if: >
+      (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success') &&
+      vars.STAGING_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Validate Deployment Inputs
+        run: |
+          test -n "${{ vars.STAGING_GATEWAY_URL }}" || (echo "Missing STAGING_GATEWAY_URL variable" && exit 1)
+
+      - name: Deploy Staging (Placeholder)
+        run: |
+          echo "Replace this step with your provider CLI/API deployment command."
+          echo "Deploying commit ${{ github.event.workflow_run.head_sha || github.sha }} to staging."
+
+      - name: Staging Smoke Check
+        run: |
+          for i in {1..30}; do
+            if curl -sf "${{ vars.STAGING_GATEWAY_URL }}/ready" > /dev/null; then
+              echo "Staging smoke check passed."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Staging smoke check failed."
+          exit 1
+
