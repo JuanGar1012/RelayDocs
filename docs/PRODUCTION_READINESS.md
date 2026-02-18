@@ -1,40 +1,72 @@
 # Production Readiness Checklist
 
-This checklist defines the minimum bar to operate RelayDocs as a production service.
+Status date: 2026-02-18
+Legend: `DONE` = implemented, `PARTIAL` = baseline in place, `PENDING` = not implemented yet.
+
+## Deploy Today Gate
+
+These are the minimum controls to safely deploy today.
+
+- [x] `DONE` CI green on latest main commit.
+- [x] `DONE` Gateway auth hardening (rate limit + lockout) active.
+- [x] `DONE` Health and readiness endpoints for gateway and document-service.
+- [x] `DONE` Request correlation IDs and structured request logs.
+- [ ] `PENDING` Real provider deploy commands in GitHub deploy workflows.
+- [ ] `PENDING` Production secrets configured in platform secret manager.
+
+Go/No-Go rule for today:
+- `GO` when both pending deploy gate items above are complete.
 
 ## Security
-- Manage secrets via environment or secret manager; no plaintext secrets in repo or logs.
-- Enforce short-lived access tokens and refresh token rotation.
-- Add gateway rate limiting and brute-force protection for auth endpoints.
-- Run dependency and container vulnerability scans in CI.
-- Generate and store SBOMs for build artifacts.
+
+- [ ] `PENDING` Secret manager integration (no secrets in repo/runtime logs).
+- [ ] `PENDING` JWT refresh token rotation and session revocation strategy.
+- [x] `DONE` Gateway rate limiting and brute-force lockout on auth routes.
+- [ ] `PENDING` Dependency and container vulnerability scans in CI.
+- [ ] `PENDING` SBOM generation and artifact attestation/signing.
+- [ ] `PENDING` WAF/CDN protections for internet-facing traffic.
 
 ## Auth and Authorization
-- Enforce server-side RBAC checks on all document and permission routes.
-- Add audit logging for sign-in, document sharing, and permission changes.
-- Add account recovery and session revocation flow.
-- Verify tenant/user scoping on every data access path.
+
+- [x] `DONE` Server-side RBAC checks on document and permission routes.
+- [ ] `PENDING` Audit logs for sign-in, sharing, and permission changes.
+- [ ] `PENDING` Account recovery and forced session revocation flows.
+- [x] `DONE` User scoping enforced on current data access paths.
+- [ ] `PENDING` Tenant boundary model (if multi-tenant deployment is planned).
 
 ## Reliability
-- Define liveness/readiness probes for gateway and document service.
-- Implement retry with bounded backoff and circuit-breaker behavior for downstream calls.
-- Keep idempotent Kafka consumers and DLQ strategy for poison messages.
-- Add graceful shutdown and in-flight request draining.
+
+- [x] `DONE` Liveness/readiness probes in gateway and document-service.
+- [ ] `PENDING` Retry/backoff and circuit-breaker policy for downstream calls.
+- [ ] `PARTIAL` Kafka idempotency present; DLQ handling still pending.
+- [ ] `PENDING` Graceful shutdown + in-flight request draining policy.
 
 ## Observability
-- Centralize structured logs with correlation IDs.
-- Publish service metrics (latency, error rate, throughput, saturation).
-- Add distributed traces for web -> gateway -> service calls.
-- Define SLOs and alert thresholds.
+
+- [x] `DONE` Correlation IDs + structured request logs.
+- [ ] `PENDING` Metrics export (latency/error/saturation) and dashboards.
+- [ ] `PENDING` Distributed tracing across web -> gateway -> service.
+- [ ] `PENDING` SLO targets and alert thresholds.
 
 ## Data and Operations
-- Maintain migration safety policy (forward-only, reversible plans where possible).
-- Set backup and restore drills for PostgreSQL.
-- Validate index usage for RBAC and document access query paths.
-- Define retention and archival policy.
+
+- [x] `DONE` Flyway migration discipline with deterministic schema validation.
+- [ ] `PENDING` Automated PostgreSQL backups + restore drill runbook.
+- [ ] `PENDING` Query/index review for production load patterns.
+- [ ] `PENDING` Data retention and archival policy.
 
 ## Delivery and Governance
-- Enforce branch protections and required status checks.
-- Use preview environments for pull requests.
-- Add progressive delivery (blue/green or canary) for low-risk rollouts.
-- Add runbooks for top failure modes and recovery steps.
+
+- [x] `DONE` Branch/PR checks and CI quality gates.
+- [ ] `PENDING` Preview environments per PR.
+- [ ] `PENDING` Progressive delivery (blue/green or canary).
+- [ ] `PENDING` Incident and recovery runbooks.
+- [ ] `PARTIAL` Deploy workflow scaffolds exist; provider-specific deploy commands still pending.
+
+## Priority Execution Order (Post-Deploy)
+
+1. Complete provider-specific deploy steps in `.github/workflows/deploy-staging.yml` and `.github/workflows/deploy-production.yml`.
+2. Add secret manager wiring and remove any dev defaults from production runtime config.
+3. Add security scanning in CI (dependency + container + SBOM).
+4. Add metrics/tracing stack and baseline alerts.
+5. Add backup/restore and incident runbooks.

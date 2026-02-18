@@ -72,12 +72,11 @@
   - `mvn -B -f C:\Users\juang\Dev\projects\Codex\RelayDocs\services\document-service\pom.xml test` passed (Kafka integration tests skipped without Docker as expected).
 
 ## Open Tasks (Prioritized)
-1. Re-run GitHub Actions E2E after dedicated `GATEWAY_JWT_SECRET` CI wiring fix and confirm green CI.
-2. Open/refresh PR for `feature/pr-workflow-checklist-docs` and merge after CI passes.
-3. Add provider-specific deploy steps (Render/Fly/Railway/AWS) to replace workflow placeholders.
-4. Add centralized log shipping/metrics backend wiring (e.g., OpenTelemetry + collector).
-5. Implement UI presentability sprint (design tokens, shell polish, empty/loading/error states, accessibility pass).
-6. Add E2E coverage for lockout/rate-limit behavior.
+1. Complete today deployment gate items in `docs/PRODUCTION_READINESS.md` and deploy production.
+2. Replace deploy workflow placeholders with provider-specific commands and secret bindings.
+3. Add CI security scans (dependency + container + SBOM).
+4. Implement observability stack baseline (metrics + tracing + alerts).
+5. Continue UI presentability sprint and accessibility pass.
 
 ## Known Issues / Edge Cases
 - Docker Desktop must be running; otherwise compose/Testcontainers fail with named-pipe connection errors.
@@ -89,4 +88,5 @@
 - [ ] Push/merge current branch after CI checks on new hardening + deployment workflow files.
 - [ ] Replace deployment workflow placeholders with concrete provider deployment commands.
 - [ ] Begin UI presentability feature branch and execute first visual system pass.
+
 

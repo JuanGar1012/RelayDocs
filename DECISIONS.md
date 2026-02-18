@@ -69,3 +69,4 @@
 - Fixed CI E2E auth regression caused by strict production JWT enforcement by setting a strong local/CI default `JWT_SECRET` in docker-compose and `.env.example`.
 - Hardened compose/CI JWT wiring by switching gateway runtime secret source to `GATEWAY_JWT_SECRET`, avoiding accidental override from unrelated global `JWT_SECRET` values in CI.
 - Added explicit CI env injection for `GATEWAY_JWT_SECRET` and compose log capture on E2E failure for faster diagnosis.
+- Converted `docs/PRODUCTION_READINESS.md` into a status-tracked execution checklist with a deployment-day gate (GO/NO-GO) and prioritized closure order.
