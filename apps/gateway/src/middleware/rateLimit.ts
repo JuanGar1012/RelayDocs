@@ -1,9 +1,6 @@
 import { type NextFunction, type Request, type Response } from "express";
-
-interface RateLimitEntry {
-  count: number;
-  windowStartedAt: number;
-}
+import { authControlsConfig } from "../security/authControlsConfig.js";
+import { getRedisClient } from "../security/redisClient.js";
 
 interface RateLimitOptions {
   maxRequests: number;
@@ -11,14 +8,14 @@ interface RateLimitOptions {
   keyExtractor: (request: Request) => string;
 }
 
-function parsePositiveInt(rawValue: string | undefined, fallback: number): number {
-  const parsed = Number.parseInt(rawValue ?? String(fallback), 10);
+interface InMemoryWindow {
+  count: number;
+  windowStartedAt: number;
+}
 
-  if (!Number.isInteger(parsed) || parsed <= 0) {
-    return fallback;
-  }
-
-  return parsed;
+interface RateLimitResult {
+  limited: boolean;
+  retryAfterSeconds: number;
 }
 
 function getClientIp(request: Request): string {
@@ -30,33 +27,79 @@ function getClientIp(request: Request): string {
 }
 
 export function createRateLimitMiddleware(options: RateLimitOptions) {
-  const entries = new Map<string, RateLimitEntry>();
+  const entries = new Map<string, InMemoryWindow>();
 
-  return (request: Request, response: Response, next: NextFunction): void => {
-    const key = options.keyExtractor(request);
+  async function consumeRedisWindow(key: string): Promise<RateLimitResult | null> {
+    const redis = await getRedisClient();
+    if (!redis) {
+      return null;
+    }
+
+    const redisKey = `ratelimit:${key}`;
+    const currentCount = await redis.incr(redisKey);
+    if (currentCount === 1) {
+      await redis.pExpire(redisKey, options.windowMs);
+    }
+
+    if (currentCount <= options.maxRequests) {
+      return {
+        limited: false,
+        retryAfterSeconds: 0
+      };
+    }
+
+    const timeToLiveMs = await redis.pTTL(redisKey);
+    const retryAfterSeconds = Math.max(1, Math.ceil(Math.max(timeToLiveMs, 0) / 1000));
+    return {
+      limited: true,
+      retryAfterSeconds
+    };
+  }
+
+  function consumeInMemoryWindow(key: string): RateLimitResult {
     const now = Date.now();
     const existing = entries.get(key);
 
     if (!existing || now - existing.windowStartedAt >= options.windowMs) {
       entries.set(key, { count: 1, windowStartedAt: now });
-      next();
-      return;
+      return {
+        limited: false,
+        retryAfterSeconds: 0
+      };
     }
 
     if (existing.count >= options.maxRequests) {
       const retryAfterSeconds = Math.ceil((options.windowMs - (now - existing.windowStartedAt)) / 1000);
-      response.setHeader("Retry-After", String(Math.max(retryAfterSeconds, 1)));
+      return {
+        limited: true,
+        retryAfterSeconds: Math.max(retryAfterSeconds, 1)
+      };
+    }
+
+    existing.count += 1;
+    return {
+      limited: false,
+      retryAfterSeconds: 0
+    };
+  }
+
+  return async (request: Request, response: Response, next: NextFunction): Promise<void> => {
+    const key = options.keyExtractor(request);
+    const redisResult = await consumeRedisWindow(key);
+    const result = redisResult ?? consumeInMemoryWindow(key);
+
+    if (result.limited) {
+      response.setHeader("Retry-After", String(result.retryAfterSeconds));
       response.status(429).json({ message: "Too many requests" });
       return;
     }
 
-    existing.count += 1;
     next();
   };
 }
 
 export const authRateLimit = createRateLimitMiddleware({
-  maxRequests: parsePositiveInt(process.env.AUTH_RATE_LIMIT_MAX, 20),
-  windowMs: parsePositiveInt(process.env.AUTH_RATE_LIMIT_WINDOW_MS, 60000),
+  maxRequests: authControlsConfig.rateLimitMax,
+  windowMs: authControlsConfig.rateLimitWindowMs,
   keyExtractor: getClientIp
 });

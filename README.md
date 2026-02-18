@@ -64,6 +64,7 @@ All document routes require `Authorization: Bearer <token>`.
 - `POST /api/v1/documents/:id/share`
 
 The gateway proxies these routes to the Spring `document-service` using `X-User-Id` headers.
+Gateway and document-service also use `X-Request-Id` correlation headers for request tracing.
 
 ## Environment
 
@@ -75,8 +76,12 @@ The gateway proxies these routes to the Spring `document-service` using `X-User-
   - `TRUST_PROXY` (default: `false`; set `true` behind reverse proxies/load balancers)
   - `ALLOW_DEV_TOKENS` (default: `true`)
   - `JWT_SECRET` (required and must be strong in production; min 32 chars)
+  - `REDIS_URL` (optional; enables distributed auth rate limiting and lockout state)
   - `AUTH_RATE_LIMIT_MAX` (default: `20` per window for auth routes)
   - `AUTH_RATE_LIMIT_WINDOW_MS` (default: `60000`)
+  - `AUTH_LOCKOUT_THRESHOLD` (default: `5` failed logins in window)
+  - `AUTH_LOCKOUT_WINDOW_MS` (default: `900000`)
+  - `AUTH_LOCKOUT_DURATION_MS` (default: `900000`)
 - Document service:
   - `DATABASE_URL`, `DATABASE_USER`, `DATABASE_PASSWORD`
   - `KAFKA_BOOTSTRAP_SERVERS` (default: `localhost:9092`)
@@ -122,3 +127,12 @@ Recommended session process:
 2. Update checkpoint context (`PROJECT_STATE.md`, `DECISIONS.md`).
 3. Run `npm run handoff:prompt`.
 4. Use `NEXT_SESSION_PROMPT.md` as the exact bootstrap prompt in the next session.
+
+## Deployment Workflows
+
+- Staging workflow: `.github/workflows/deploy-staging.yml`
+  - Runs after successful `CI` on `main` (or manually) when `STAGING_DEPLOY_ENABLED=true` GitHub variable is set.
+  - Requires `STAGING_GATEWAY_URL` GitHub variable for `/ready` smoke checks.
+- Production workflow: `.github/workflows/deploy-production.yml`
+  - Manual dispatch workflow when `PROD_DEPLOY_ENABLED=true` GitHub variable is set.
+  - Requires `PROD_GATEWAY_URL` GitHub variable for `/ready` smoke checks.

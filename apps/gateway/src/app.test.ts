@@ -146,6 +146,11 @@ describe("gateway", () => {
     expect(response.body).toEqual({ service: "gateway", status: "ok" });
   });
 
+  it("returns and propagates request ids", async () => {
+    const response = await request(app).get("/health").set("x-request-id", "req-test-1");
+    expect(response.headers["x-request-id"]).toBe("req-test-1");
+  });
+
   it("returns readiness when dependency is healthy", async () => {
     const response = await request(app).get("/ready");
 

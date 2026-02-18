@@ -62,3 +62,7 @@
 - Centralized gateway runtime security rules in shared config (`getJwtSecret`, `allowDevTokens`) so production disables dev tokens and requires a strong JWT secret.
 - Added dependency-aware readiness separation (`/health` vs `/ready`) at both gateway and document-service to support orchestrator-safe liveness/readiness checks.
 - Chose in-memory auth rate limiting at gateway as an immediate control, with intent to replace/augment with distributed rate limiting when scaling horizontally.
+- Extended gateway observability and traceability with request-scoped correlation IDs (`X-Request-Id`) via async context propagation and structured access logs, and propagated request IDs to downstream service calls.
+- Added document-service request correlation filter with MDC-backed request ID logging and response echo to align logs across gateway and service hops.
+- Implemented Redis-capable distributed auth controls in gateway (rate limiting and account lockout) with deterministic in-memory fallback when Redis is absent.
+- Added staging and production deployment workflow scaffolds with post-deploy `/ready` smoke checks gated by GitHub environment variables.

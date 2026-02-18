@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -28,6 +29,13 @@ class DocumentServiceApplicationTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.service").value("document-service"))
                 .andExpect(jsonPath("$.status").value("ok"));
+    }
+
+    @Test
+    void healthEndpointEchoesRequestIdHeader() throws Exception {
+        mockMvc.perform(get("/health").header("X-Request-Id", "req-abc-1"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("X-Request-Id", "req-abc-1"));
     }
 
     @Test

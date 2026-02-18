@@ -5,7 +5,9 @@ import {
   createHttpDocumentServiceClient,
   type DocumentServiceClient
 } from "./client/documentServiceClient.js";
+import { requestContextMiddleware } from "./middleware/requestContext.js";
 import { authRateLimit } from "./middleware/rateLimit.js";
+import { requestLoggingMiddleware } from "./middleware/requestLogging.js";
 import { securityHeaders } from "./middleware/securityHeaders.js";
 import { createAuthRouter } from "./routes/auth.js";
 import { createDocumentRouter } from "./routes/documents.js";
@@ -26,6 +28,8 @@ export function createApp(options?: CreateAppOptions): express.Express {
     })
   );
   app.use(securityHeaders);
+  app.use(requestContextMiddleware);
+  app.use(requestLoggingMiddleware);
   app.use(express.json());
 
   const documentServiceBaseUrl = process.env.DOCUMENT_SERVICE_BASE_URL ?? "http://localhost:8081";
