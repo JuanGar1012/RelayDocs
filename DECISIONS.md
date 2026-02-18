@@ -51,3 +51,14 @@
 - Added broker-backed Kafka consumer integration tests using Testcontainers and marked them `disabledWithoutDocker=true` to keep deterministic local/CI behavior when Docker is unavailable.
 - Tightened CI E2E readiness checks to include web endpoint availability before running Playwright to reduce startup race failures.
 - Added explicit Docker recovery/cache troubleshooting notes to README as the canonical operational guidance.
+
+## 2026-02-17
+- Confirmed and reinforced the branch/PR/CI workflow as the default delivery path: branch from latest `main`, run local lint/build/test gates, open PR, confirm CI, merge, sync `main`, delete feature branch.
+- Added `.gitattributes` for repository-level line-ending normalization to reduce cross-platform LF/CRLF staging noise while preserving Windows script ergonomics.
+- Chose minimal code fix strategy for gateway test typing/lint conflict by capturing request init explicitly in mocks, preserving strict TypeScript and lint compliance without altering runtime behavior.
+
+## 2026-02-18
+- Prioritized a small, production-hardening slice over broad refactors: gateway security headers, auth endpoint rate limiting, and explicit readiness probing were implemented first.
+- Centralized gateway runtime security rules in shared config (`getJwtSecret`, `allowDevTokens`) so production disables dev tokens and requires a strong JWT secret.
+- Added dependency-aware readiness separation (`/health` vs `/ready`) at both gateway and document-service to support orchestrator-safe liveness/readiness checks.
+- Chose in-memory auth rate limiting at gateway as an immediate control, with intent to replace/augment with distributed rate limiting when scaling horizontally.

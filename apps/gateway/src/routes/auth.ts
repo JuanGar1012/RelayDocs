@@ -1,6 +1,7 @@
 import { SignJWT } from "jose";
 import { Router, type Response } from "express";
 import { ZodError } from "zod";
+import { getJwtSecret } from "../config/runtime.js";
 import {
   type DocumentServiceClient,
   DownstreamServiceError
@@ -24,16 +25,6 @@ function mapError(response: Response, error: unknown): void {
   }
 
   response.status(500).json({ message: "Unexpected error" });
-}
-
-function getJwtSecret(): string {
-  const secret = process.env.JWT_SECRET;
-
-  if (typeof secret === "string" && secret.length > 0) {
-    return secret;
-  }
-
-  return "relaydocs-dev-secret";
 }
 
 async function issueToken(userId: string): Promise<string> {

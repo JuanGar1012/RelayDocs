@@ -32,7 +32,9 @@ Collaborative document management platform with a React frontend, Node API gatew
    - `http://localhost:5173`
 5. Check health:
    - `http://localhost:8080/health` (gateway)
+   - `http://localhost:8080/ready` (gateway readiness, checks document-service dependency)
    - `http://localhost:8081/health` (document-service)
+   - `http://localhost:8081/ready` (document-service readiness, checks database)
 
 ## Live Edit Development
 
@@ -54,6 +56,7 @@ Live edit mode intentionally uses non-compose ports to avoid collisions:
 All document routes require `Authorization: Bearer <token>`.
 
 - `GET /health`
+- `GET /ready`
 - `GET /api/v1/documents`
 - `POST /api/v1/documents`
 - `GET /api/v1/documents/:id`
@@ -69,8 +72,11 @@ The gateway proxies these routes to the Spring `document-service` using `X-User-
 - Gateway:
   - `DOCUMENT_SERVICE_BASE_URL` (default: `http://localhost:8081`)
   - `WEB_ORIGIN` (default: `http://localhost:5173`)
+  - `TRUST_PROXY` (default: `false`; set `true` behind reverse proxies/load balancers)
   - `ALLOW_DEV_TOKENS` (default: `true`)
-  - `JWT_SECRET` (required when `ALLOW_DEV_TOKENS=false`)
+  - `JWT_SECRET` (required and must be strong in production; min 32 chars)
+  - `AUTH_RATE_LIMIT_MAX` (default: `20` per window for auth routes)
+  - `AUTH_RATE_LIMIT_WINDOW_MS` (default: `60000`)
 - Document service:
   - `DATABASE_URL`, `DATABASE_USER`, `DATABASE_PASSWORD`
   - `KAFKA_BOOTSTRAP_SERVERS` (default: `localhost:9092`)

@@ -1,5 +1,6 @@
 import { type NextFunction, type Response } from "express";
 import { jwtVerify } from "jose";
+import { allowDevTokens, getJwtSecret } from "../config/runtime.js";
 import type { AuthenticatedRequest } from "../types.js";
 
 const TOKEN_PREFIX = "dev-token-";
@@ -12,19 +13,6 @@ function getBearerToken(request: AuthenticatedRequest): string | null {
   }
 
   return authorizationHeader.slice("Bearer ".length).trim();
-}
-
-function allowDevTokens(): boolean {
-  return process.env.ALLOW_DEV_TOKENS !== "false";
-}
-
-function getJwtSecret(): string {
-  const secret = process.env.JWT_SECRET;
-  if (typeof secret === "string" && secret.length > 0) {
-    return secret;
-  }
-
-  return "relaydocs-dev-secret";
 }
 
 export async function requireAuth(
