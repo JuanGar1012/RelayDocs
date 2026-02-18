@@ -75,7 +75,7 @@ Gateway and document-service also use `X-Request-Id` correlation headers for req
   - `WEB_ORIGIN` (default: `http://localhost:5173`)
   - `TRUST_PROXY` (default: `false`; set `true` behind reverse proxies/load balancers)
   - `ALLOW_DEV_TOKENS` (default: `true`)
-  - `JWT_SECRET` (required and must be strong in production; min 32 chars)
+  - `JWT_SECRET` (required and must be strong in production; min 32 chars). Compose defaults this to a local-only dev value; override in real environments.
   - `REDIS_URL` (optional; enables distributed auth rate limiting and lockout state)
   - `AUTH_RATE_LIMIT_MAX` (default: `20` per window for auth routes)
   - `AUTH_RATE_LIMIT_WINDOW_MS` (default: `60000`)

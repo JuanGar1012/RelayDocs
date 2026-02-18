@@ -66,3 +66,4 @@
 - Added document-service request correlation filter with MDC-backed request ID logging and response echo to align logs across gateway and service hops.
 - Implemented Redis-capable distributed auth controls in gateway (rate limiting and account lockout) with deterministic in-memory fallback when Redis is absent.
 - Added staging and production deployment workflow scaffolds with post-deploy `/ready` smoke checks gated by GitHub environment variables.
+- Fixed CI E2E auth regression caused by strict production JWT enforcement by setting a strong local/CI default `JWT_SECRET` in docker-compose and `.env.example`.

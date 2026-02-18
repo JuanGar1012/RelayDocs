@@ -72,11 +72,12 @@
   - `mvn -B -f C:\Users\juang\Dev\projects\Codex\RelayDocs\services\document-service\pom.xml test` passed (Kafka integration tests skipped without Docker as expected).
 
 ## Open Tasks (Prioritized)
-1. Open/refresh PR for `feature/pr-workflow-checklist-docs` and merge after CI passes.
-2. Add provider-specific deploy steps (Render/Fly/Railway/AWS) to replace workflow placeholders.
-3. Add centralized log shipping/metrics backend wiring (e.g., OpenTelemetry + collector).
-4. Implement UI presentability sprint (design tokens, shell polish, empty/loading/error states, accessibility pass).
-5. Add E2E coverage for lockout/rate-limit behavior.
+1. Re-run GitHub Actions E2E after compose JWT secret fallback fix and confirm green CI.
+2. Open/refresh PR for `feature/pr-workflow-checklist-docs` and merge after CI passes.
+3. Add provider-specific deploy steps (Render/Fly/Railway/AWS) to replace workflow placeholders.
+4. Add centralized log shipping/metrics backend wiring (e.g., OpenTelemetry + collector).
+5. Implement UI presentability sprint (design tokens, shell polish, empty/loading/error states, accessibility pass).
+6. Add E2E coverage for lockout/rate-limit behavior.
 
 ## Known Issues / Edge Cases
 - Docker Desktop must be running; otherwise compose/Testcontainers fail with named-pipe connection errors.
